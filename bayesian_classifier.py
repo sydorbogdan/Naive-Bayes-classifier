@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import re
 
 
 class BayesianClassifier:
@@ -7,7 +8,10 @@ class BayesianClassifier:
     Implementation of Naive Bayes classification algorithm.
     """
     def __init__(self):
-        pass
+        self.features = {}
+        self.label_probs = {}
+        self.feature_probs = []
+        self.conditional_probs = {}
 
     def fit(self, X, y):
         """
@@ -16,23 +20,37 @@ class BayesianClassifier:
         :param y: pd.DataFrame|list - train output/labels
         :return: None
         """
-        self.probs = {label: [] for label in y['label'].unique()}
         self.features = {feature: ind for ind, feature
                          in enumerate(np.unique(np.hstack(X['Processed Tweet'])))}
+        labels =  y['label'].unique()
+        self.label_probs = {label: 0 for label in labels}
+        self.conditional_probs = {label: [0] * len(self.features) for label in labels}
 
         print(self.features)
         print(len(self.features))
         def check_features(row):
             processed_tweet = row["Processed Tweet"]
-            row['Features'] = [0] * len(self.features)
-            for word in processed_tweet:
-                row['Features'][self.features[word]] += 1
+            for word in set(processed_tweet):
+                self.conditional_probs[row['label']][self.features[word]] += 1
+            self.label_probs[row['label']] += 1
             return row
 
-        df = X.apply(check_features, axis=1)
-        len(df)
+        df = X.merge(y, left_index=True, right_index=True).apply(check_features, axis=1)
 
-        print(df.head())
+        for label in self.label_probs:
+            self.conditional_probs[label] = [prob / self.label_probs[label]
+                                         for prob in self.conditional_probs[label]]
+            self.label_probs[label] /= len(df)
+        self.feature_probs = [0] * len(self.features)
+        for count in range(len(self.features)):
+            self.feature_probs[count] = sum([self.conditional_probs[label][count] * self.label_probs[label]
+                                             for label in self.label_probs])
+
+
+        print(self.features)
+        print(self.feature_probs)
+        print(self.label_probs)
+        print(self.conditional_probs)
 
 
 
@@ -43,7 +61,22 @@ class BayesianClassifier:
         :param label: str - label
         :return: float - probability P(label|message)
         """
-        pass
+        tweet_words = {word for word in re.sub(r"[\W\d]", r" ", message).split()
+                 if word in self.features}
+        features = [0] * len(self.features)
+        for word in tweet_words:
+            features[self.features[word]] = 1
+        condititional_prob = 1
+        total_prob = 1
+        for count in range(len(features)):
+            if features[count] == 1:
+                condititional_prob *= self.conditional_probs[label][count]
+                total_prob *= self.feature_probs[count]
+            else:
+                condititional_prob *= 1 - self.conditional_probs[label][count]
+                total_prob *= 1 - self.feature_probs[count]
+        return (condititional_prob * self.label_probs[label]) / total_prob
+
 
     def predict(self, message):
         """
