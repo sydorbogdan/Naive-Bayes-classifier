@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+
+
 class BayesianClassifier:
     """
     Implementation of Naive Bayes classification algorithm.
@@ -12,7 +16,25 @@ class BayesianClassifier:
         :param y: pd.DataFrame|list - train output/labels
         :return: None
         """
-        pass
+        self.probs = {label: [] for label in y['label'].unique()}
+        self.features = {feature: ind for ind, feature
+                         in enumerate(np.unique(np.hstack(X['Processed Tweet'])))}
+
+        print(self.features)
+        print(len(self.features))
+        def check_features(row):
+            processed_tweet = row["Processed Tweet"]
+            row['Features'] = [0] * len(self.features)
+            for word in processed_tweet:
+                row['Features'][self.features[word]] += 1
+            return row
+
+        df = X.apply(check_features, axis=1)
+        len(df)
+
+        print(df.head())
+
+
 
     def predict_prob(self, message, label):
         """
