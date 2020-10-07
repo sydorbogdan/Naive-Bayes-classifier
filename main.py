@@ -1,5 +1,4 @@
 from bayesian_classifier import BayesianClassifier
-
 import pandas as pd
 import re
 
@@ -7,6 +6,7 @@ import re
 def process_data(data_file, stop_words_file="stop_words.txt"):
     """
     Function for data processing and split it into X and y sets.
+    :param stop_words_file:
     :param data_file: str - train data
     :return: pd.DataFrame|list, pd.DataFrame|list - X and y data frames or lists
     """
@@ -16,9 +16,8 @@ def process_data(data_file, stop_words_file="stop_words.txt"):
 
     def clear_text(row, min_len=4):
         text = re.sub(r"[\W\d]", r" ", row["tweet"])
-        print(text)
-        row["Processed Tweet"] = [word for word in text.split()
-                                  if word not in stop_words and len(word) >= min_len]
+        row["Processed Tweet"] = [word.lower() for word in text.split()
+                                  if word.lower() not in stop_words and len(word) >= min_len]
         for word in row["Processed Tweet"]:
             word_frequencies[word] = word_frequencies.get(word, 0) + 1
         return row
@@ -28,23 +27,24 @@ def process_data(data_file, stop_words_file="stop_words.txt"):
                                   if word_frequencies[word] >= min_freq]
         return row
 
-    df = pd\
-        .read_csv(data_file, encoding="utf8")\
-        .apply(clear_text, axis=1)\
-        .drop(labels=["tweet", "id", "Unnamed: 0"], axis=1)\
+    df = pd \
+        .read_csv(data_file, encoding="utf8") \
+        .apply(clear_text, axis=1) \
+        .drop(labels=["tweet", "id", "Unnamed: 0"], axis=1) \
         .apply(remove_infrequent, axis=1)
-
 
     return df.drop("label", axis=1), df.drop("Processed Tweet", axis=1)
 
 
-if __name__ == "__main__":
+def test_BayesianClassifier():
     train_X, train_y = process_data("train.csv")
-    #test_X, test_y = process_data("your test data file")
-
     classifier = BayesianClassifier()
     classifier.fit(train_X, train_y)
-    #classifier.predict_prob(test_X[0], test_y[0])
+    test_X, test_y = process_data("test.csv")
+    print("model score: ", classifier.score(test_X, test_y)*100, "%")
 
-    #print("model score: ", classifier.score(test_X, test_y))
-    #print(process_data("train.csv"))
+
+if __name__ == "__main__":
+    test_BayesianClassifier()
+    # classifier.predict_prob("classiest show in the wilderness #magickingdom #countrybearjamboree   @ country bearâ¦ ", "neutral")
+    # print(process_data("train.csv"))
