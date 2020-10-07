@@ -50,8 +50,11 @@ def process_data(data_file, stop_words_file="stop_words.txt"):
     df = pd\
         .read_csv(data_file, encoding="utf8")\
         .drop("Unnamed: 0", axis=1)\
-        .apply(clear_text, axis=1)
-    return df.drop("label", axis=1), df.drop("Processed Tweet", axis=1)
+        .apply(clear_text, axis=1)\
+        .drop("tweet", axis=1)
+    X = df.drop("label", axis=1).set_index("id")
+    y = df.drop("Processed Tweet", axis=1).set_index("id")
+    return X, y
 
 
 if __name__ == "__main__":
